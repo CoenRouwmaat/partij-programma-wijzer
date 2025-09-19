@@ -1,9 +1,9 @@
 # TODO: clean up & add error handling
 # TODO: write documentation & logging
 # TODO: check if this method is compatible for other parties
-# TODO: add config classes for high level parameter configuration
 
 import json
+from dataclasses import asdict
 from pathlib import Path
 
 from langchain_core.documents import Document
@@ -11,39 +11,44 @@ from langchain_text_splitters import (MarkdownHeaderTextSplitter,
                                       RecursiveCharacterTextSplitter)
 from loguru import logger
 
-from config import FilePaths
+from config import (FilePaths, MarkdownHeaderTextSplitterConfig,
+                    RecursiveCharacterTextSplitterConfig)
 from enums import Party
 
 
-HEADERS_TO_SPLIT_ON = [
-    ("#", "Hoofdstuk"),
-    ("##", "Sectie"),
-    ("###", "Subsectie"),
-]
+class CustomMarkdownSplitter:
+    """
+    A custom splitter that first splits a markdown document by headers
+    and then performs a recursive character split on the resulting chunks.
+    """
+    def __init__(self):
+        """Initializes the two underlying text splitters with the given configurations."""
+        self.markdown_splitter = MarkdownHeaderTextSplitter(**asdict(MarkdownHeaderTextSplitterConfig()))
+        self.recursive_splitter = RecursiveCharacterTextSplitter(**asdict(RecursiveCharacterTextSplitterConfig()))
 
-MAX_CHUNK_SIZE = 512
-CHUNK_OVERLAP = 50
+    def split(self, markdown_str: str) -> list[Document]:
+        """
+        Splits a markdown string into chunks using a two-step process.
+
+        Args:
+            markdown_str: The raw markdown content as a string.
+
+        Returns:
+            A list of Document objects, each representing a final chunk.
+        """
+        # Step 1: Split the markdown string by headers
+        md_header_splits = self.markdown_splitter.split_text(markdown_str)
+
+        # Step 2: Recursively split the header chunks into smaller chunks
+        final_chunks = self.recursive_splitter.split_documents(md_header_splits)
+
+        return final_chunks
 
 
 def chunk_markdown_file(markdown_str: str) -> list[Document]:
 
-    markdown_splitter = MarkdownHeaderTextSplitter(HEADERS_TO_SPLIT_ON, strip_headers=True)
-    md_header_splits = markdown_splitter.split_text(markdown_str)
-    # print(len(md_header_splits))
-    # print(md_header_splits[50])
-
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=MAX_CHUNK_SIZE,
-        chunk_overlap=CHUNK_OVERLAP,
-        separators=["\n\n", ".\n", "\n", ".", " ", ""],
-        keep_separator='end'
-    )
-
-    chunks = text_splitter.split_documents(md_header_splits)
-    # print(len(chunks))
-    # for i in range(10, 30):
-    #     print(chunks[i])
-
+    splitter = CustomMarkdownSplitter()
+    chunks = splitter.split(markdown_str)
     return chunks
 
 
@@ -61,13 +66,12 @@ def write_chunks_to_json(chunks: list[Document], chunk_path: Path) -> None:
 
 
 def chunk_and_store_markdown_file(party: Party) -> None:
-    clean_markdown_file = FilePaths.CLEAN_MARKDOWN_DIR / f"{party}_clean.md"
+    clean_markdown_file = FilePaths.clean_markdown_dir / f"{party}_clean.md"
 
     with open(clean_markdown_file, 'r', encoding='utf-8') as file:
         markdown_string = file.read()
 
     chunks = chunk_markdown_file(markdown_string)
-
-    chunk_path = FilePaths.CHUNK_DIR / f"{party}_chunks.jsonl"
+    chunk_path = FilePaths.chunk_dir / f"{party}_chunks.jsonl"
 
     write_chunks_to_json(chunks, chunk_path)
