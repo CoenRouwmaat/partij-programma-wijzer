@@ -1,6 +1,5 @@
 # TODO: fix & clean image decoding & storing (doesn't render in markdown)
 # TODO: add include_images flag
-# TODO: create Party class / Literal / ?
 # TODO: add args and return types to docstrings
 # TODO: add module docstring
 # TODO: move global vars to config file
@@ -15,6 +14,8 @@ from loguru import logger
 from mistralai import Mistral
 from mistralai.models import OCRImageObject, OCRPageObject, OCRResponse
 
+from enums import Party
+
 load_dotenv()
 
 MISTRAL_OCR_MODEL = "mistral-ocr-latest"
@@ -28,7 +29,7 @@ MARKDOWN_DIR = DATA_DIR / "markdown_raw"
 IMAGE_DIR = DATA_DIR / "images"
 
 
-def upload_pdf_to_mistral(mistral_client: Mistral, party: str) -> str:
+def upload_pdf_to_mistral(mistral_client: Mistral, party: Party) -> str:
     """Upload a file from the pdf directory to Mistral, and returns the document url."""
 
     filename = f"Verkiezingsprogramma {party}.pdf"
@@ -65,7 +66,7 @@ def mistral_process_pdf(mistral_client: Mistral, document_url: str) -> OCRRespon
     return ocr_response
 
 
-def save_ocr_response_as_json(ocr_result: OCRResponse, party: str) -> None:
+def save_ocr_response_as_json(ocr_result: OCRResponse, party: Party) -> None:
     """Save OCR response to the JSON folder."""
     response_json = ocr_result.model_dump_json()
     json_filename = JSON_DIR / f"{party}.json"
@@ -121,7 +122,7 @@ def process_ocr_page_images(
     return page_markdown
 
 
-def save_ocr_response_as_md(ocr_result: OCRResponse, party: str) -> None:
+def save_ocr_response_as_md(ocr_result: OCRResponse, party: Party) -> None:
     """Save OCR response to the markdown folder."""
 
     md_filename = MARKDOWN_DIR / f"{party}.md"
@@ -143,7 +144,7 @@ def save_ocr_response_as_md(ocr_result: OCRResponse, party: str) -> None:
         f.write(response_md)
 
 
-def process_pdf_to_markdown(party):
+def process_pdf_to_markdown(party: Party):
     """Process a single PDF file with OCR and store it as both a json and markdown file."""
 
     mistral_client = Mistral(api_key=os.getenv("MISTRAL_API_KEY"))
