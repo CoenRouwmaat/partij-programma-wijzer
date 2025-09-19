@@ -11,12 +11,9 @@ from langchain_text_splitters import (MarkdownHeaderTextSplitter,
                                       RecursiveCharacterTextSplitter)
 from loguru import logger
 
+from config import FilePaths
 from enums import Party
 
-PROJECT_ROOT = Path.cwd()
-DATA_DIR = PROJECT_ROOT / "data"
-CLEAN_MARKDOWN_DIR = DATA_DIR / "markdown_clean"
-CHUNK_DIR = DATA_DIR / "chunks"
 
 HEADERS_TO_SPLIT_ON = [
     ("#", "Hoofdstuk"),
@@ -64,13 +61,13 @@ def write_chunks_to_json(chunks: list[Document], chunk_path: Path) -> None:
 
 
 def chunk_and_store_markdown_file(party: Party) -> None:
-    clean_markdown_file = CLEAN_MARKDOWN_DIR / f"{party}_clean.md"
+    clean_markdown_file = FilePaths.CLEAN_MARKDOWN_DIR / f"{party}_clean.md"
 
     with open(clean_markdown_file, 'r', encoding='utf-8') as file:
         markdown_string = file.read()
 
     chunks = chunk_markdown_file(markdown_string)
 
-    chunk_path = CHUNK_DIR / f"{party}_chunks.jsonl"
+    chunk_path = FilePaths.CHUNK_DIR / f"{party}_chunks.jsonl"
 
     write_chunks_to_json(chunks, chunk_path)
