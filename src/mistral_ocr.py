@@ -14,20 +14,17 @@ from loguru import logger
 from mistralai import Mistral
 from mistralai.models import OCRImageObject, OCRPageObject, OCRResponse
 
-from config import FilePaths
-from enums import Party
+from src.config import FilePaths, MistralConfig
+from src.enums import Party
 
 load_dotenv()
-
-MISTRAL_OCR_MODEL = "mistral-ocr-latest"
-MISTRAL_IMAGE_REF_FORMAT = "img-{i}.jpeg"
 
 
 def upload_pdf_to_mistral(mistral_client: Mistral, party: Party) -> str:
     """Upload a file from the pdf directory to Mistral, and returns the document url."""
 
     filename = f"Verkiezingsprogramma {party}.pdf"
-    file = FilePaths.PDF_DIR / filename
+    file = FilePaths.pdf_dir / filename
 
     if not file.exists():
         raise ValueError(f"The file {file} does not exist.")
@@ -50,7 +47,7 @@ def mistral_process_pdf(mistral_client: Mistral, document_url: str) -> OCRRespon
 
     logger.info(f"Running OCR on document {document_url}...")
     ocr_response = mistral_client.ocr.process(
-        model=MISTRAL_OCR_MODEL,
+        model=MistralConfig.mistral_ocr_model,
         document={
             "type": "document_url",
             "document_url": document_url,
@@ -63,7 +60,7 @@ def mistral_process_pdf(mistral_client: Mistral, document_url: str) -> OCRRespon
 def save_ocr_response_as_json(ocr_result: OCRResponse, party: Party) -> None:
     """Save OCR response to the JSON folder."""
     response_json = ocr_result.model_dump_json()
-    json_filename = FilePaths.JSON_DIR / f"{party}.json"
+    json_filename = FilePaths.json_dir / f"{party}.json"
 
     logger.info(f"Writing {party} json document to {json_filename}...")
     with open(json_filename, 'w') as f:
@@ -119,7 +116,7 @@ def process_ocr_page_images(
 def save_ocr_response_as_md(ocr_result: OCRResponse, party: Party) -> None:
     """Save OCR response to the markdown folder."""
 
-    md_filename = FilePaths.MARKDOWN_DIR / f"{party}.md"
+    md_filename = FilePaths.markdown_dir / f"{party}.md"
 
     response_md = ""
     for page in ocr_result.pages:
@@ -128,7 +125,7 @@ def save_ocr_response_as_md(ocr_result: OCRResponse, party: Party) -> None:
         image_page_markdown = process_ocr_page_images(
             ocr_page=page,
             page_markdown=page_markdown,
-            image_target_dir=FilePaths.IMAGE_DIR / party
+            image_target_dir=FilePaths.image_dir / party
         )
 
         response_md += image_page_markdown + "\n\n"

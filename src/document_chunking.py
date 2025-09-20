@@ -1,6 +1,6 @@
 # TODO: clean up & add error handling
 # TODO: write documentation & logging
-# TODO: check if this method is compatible for other parties
+# TODO: enrich chunks for optimal embedding
 
 import json
 from dataclasses import asdict
@@ -11,9 +11,9 @@ from langchain_text_splitters import (MarkdownHeaderTextSplitter,
                                       RecursiveCharacterTextSplitter)
 from loguru import logger
 
-from config import (FilePaths, MarkdownHeaderTextSplitterConfig,
-                    RecursiveCharacterTextSplitterConfig)
-from enums import Party
+from src.config import (FilePaths, MarkdownHeaderTextSplitterConfig,
+                        RecursiveCharacterTextSplitterConfig)
+from src.enums import Party
 
 
 class CustomMarkdownSplitter:
