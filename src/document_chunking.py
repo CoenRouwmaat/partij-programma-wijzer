@@ -21,10 +21,14 @@ class CustomMarkdownSplitter:
     A custom splitter that first splits a markdown document by headers
     and then performs a recursive character split on the resulting chunks.
     """
-    def __init__(self):
+    def __init__(
+        self,
+        markdown_splitter_config: MarkdownHeaderTextSplitterConfig,
+        recursive_splitter_config: RecursiveCharacterTextSplitterConfig
+    ):
         """Initializes the two underlying text splitters with the given configurations."""
-        self.markdown_splitter = MarkdownHeaderTextSplitter(**asdict(MarkdownHeaderTextSplitterConfig()))
-        self.recursive_splitter = RecursiveCharacterTextSplitter(**asdict(RecursiveCharacterTextSplitterConfig()))
+        self.markdown_splitter = MarkdownHeaderTextSplitter(**asdict(markdown_splitter_config))
+        self.recursive_splitter = RecursiveCharacterTextSplitter(**asdict(recursive_splitter_config))
 
     def split(self, markdown_str: str) -> list[Document]:
         """
@@ -46,8 +50,13 @@ class CustomMarkdownSplitter:
 
 
 def chunk_markdown_file(markdown_str: str) -> list[Document]:
+    markdown_splitter_config = MarkdownHeaderTextSplitterConfig()
+    recursive_splitter_config = RecursiveCharacterTextSplitterConfig()
 
-    splitter = CustomMarkdownSplitter()
+    splitter = CustomMarkdownSplitter(
+        markdown_splitter_config=markdown_splitter_config,
+        recursive_splitter_config=recursive_splitter_config
+    )
     chunks = splitter.split(markdown_str)
     return chunks
 
