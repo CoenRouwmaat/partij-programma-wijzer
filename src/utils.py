@@ -8,6 +8,8 @@ def get_party_from_string(party_str: str) -> Party:
     Custom type function for argparse to convert a string to a Party enum.
     """
     try:
+        if party_str.upper() == "50PLUS":
+            party_str = "VIJFTIG_PLUS"  # Name incompatible as attribute
         return Party[party_str.upper()]
     except KeyError:
         valid_parties = [party.name for party in Party]
