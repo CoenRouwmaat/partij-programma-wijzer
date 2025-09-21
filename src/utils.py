@@ -1,6 +1,16 @@
 import argparse
+from pathlib import Path
 
 from src.enums import Party
+
+
+def find_project_root(marker_file: str = "pyproject.toml") -> Path:
+    """Finds the project root by searching for a marker file."""
+    current_dir = Path(__file__).resolve().parent
+    for parent in [current_dir] + list(current_dir.parents):
+        if (parent / marker_file).exists():
+            return parent
+    raise FileNotFoundError(f"Could not find project root with marker file: '{marker_file}'")
 
 
 def get_party_from_string(party_str: str) -> Party:

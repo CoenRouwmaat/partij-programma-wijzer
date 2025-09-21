@@ -1,5 +1,5 @@
 # TODO: look into Pydantic for dataclass definitions
-# TODO: refactor to folder
+# TODO: refactor to folder (& change project_root def)
 
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -7,10 +7,12 @@ from typing import Literal
 
 from google.genai import types
 
+from src.utils import find_project_root
+
 
 @dataclass
 class FilePaths:
-    project_root: Path = Path.cwd()
+    project_root: Path = find_project_root()
     data_dir: Path = project_root / "data"
     pdf_dir: Path = data_dir / "pdfs"
     markdown_dir: Path = data_dir / "markdown_raw"
