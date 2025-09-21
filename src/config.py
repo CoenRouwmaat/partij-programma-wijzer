@@ -1,8 +1,11 @@
 # TODO: look into Pydantic for dataclass definitions
+# TODO: refactor to folder
 
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
+
+from google.genai import types
 
 
 @dataclass
@@ -42,3 +45,12 @@ class RecursiveCharacterTextSplitterConfig:
         default_factory=lambda: ["\n\n", ".\n", "\n", ".", " ", ""]
     )
     keep_separator: Literal["start", "end"] = "end"
+
+
+@dataclass
+class GeminiEmbeddingConfig:
+    model: str = "gemini-embedding-001"
+    config = types.EmbedContentConfig(
+        task_type="retrieval_document",
+        output_dimensionality=3072
+    )
