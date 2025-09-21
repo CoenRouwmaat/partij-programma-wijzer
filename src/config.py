@@ -18,6 +18,7 @@ class FilePaths:
     markdown_dir: Path = data_dir / "markdown_raw"
     image_dir: Path = data_dir / "images"
     clean_markdown_dir: Path = data_dir / "markdown_clean"
+    short_markdown_dir: Path = data_dir / "markdown_short"
     json_dir: Path = data_dir / "json"
     chunk_dir: Path = data_dir / "chunks"
 
