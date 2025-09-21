@@ -17,6 +17,7 @@ dependencies = [
     "langchain-text-splitters>=0.3.11",
     "loguru>=0.7.3",
     "mistralai>=1.9.10",
+    "pandas>=2.3.2",
 ]
 
 [tool.flake8]
