@@ -9,7 +9,18 @@ from enums import Party
 
 
 @dataclass
-class DocumentChunkData:
+class PartyDocumentChunk:
+    """Represents a document chunk with content and other available information."""
+    party: Party
+    title: str
+    chapter: str
+    section: str | None
+    subsection: str | None
+    content: str
+
+
+@dataclass
+class EnrichedPartyDocumentChunk:
     """Represents a document chunk with content, embedding and metadata."""
     id: UUID
     source: str
