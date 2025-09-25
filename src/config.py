@@ -2,12 +2,16 @@
 # TODO: refactor to folder (& change project_root def)
 
 from dataclasses import dataclass, field
+import os
 from pathlib import Path
 from typing import Literal
 
+from dotenv import load_dotenv
 from google.genai import types
 
 from src.utils import find_project_root
+
+load_dotenv()
 
 
 @dataclass
@@ -57,3 +61,12 @@ class GeminiEmbeddingConfig:
         task_type="retrieval_document",
         output_dimensionality=3072
     )
+
+
+@dataclass
+class PostgresClientConfig:
+    host: str | None = os.getenv("PG_HOST")
+    port: str | None = os.getenv("PG_PORT")
+    dbname: str | None = os.getenv("PG_DATABASE")
+    user: str | None = os.getenv("PG_USERNAME")
+    password: str | None = os.getenv("PG_PASSWORD")
