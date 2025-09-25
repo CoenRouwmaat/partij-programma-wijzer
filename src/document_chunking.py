@@ -74,13 +74,18 @@ def write_chunks_to_json(chunks: list[Document], chunk_path: Path) -> None:
     logger.info(f"Chunks saved to {chunk_path}")
 
 
-def chunk_and_store_markdown_file(party: Party) -> None:
+def read_and_chunk_markdown_file(party: Party) -> list[Document]:
     clean_markdown_file = FilePaths.clean_markdown_dir / f"{party}_clean.md"
 
     with open(clean_markdown_file, 'r', encoding='utf-8') as file:
         markdown_string = file.read()
 
     chunks = chunk_markdown_file(markdown_string)
+    return chunks
+
+
+def chunk_and_store_markdown_file(party: Party) -> None:
+    chunks = read_and_chunk_markdown_file(party=party)
     chunk_path = FilePaths.chunk_dir / f"{party}_chunks.jsonl"
 
     write_chunks_to_json(chunks, chunk_path)
