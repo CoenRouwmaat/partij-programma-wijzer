@@ -19,6 +19,7 @@ dependencies = [
     "mistralai>=1.9.10",
     "pandas>=2.3.2",
     "psycopg2>=2.9.10",
+    "types-psycopg2>=2.9.21.20250915",
 ]
 
 [tool.flake8]
