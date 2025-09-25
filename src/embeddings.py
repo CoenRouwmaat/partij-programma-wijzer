@@ -1,4 +1,5 @@
 # TODO: create gemini client config class
+# TODO: convert embedding_content type to ndarray / tensor?
 
 from dotenv import load_dotenv
 from google.genai import Client
@@ -14,7 +15,7 @@ def format_embedding_content(chunk: PartyDocumentChunk) -> str:
     return embedding_content
 
 
-def generate_embeddings(gemini_client: Client, embedding_content: list[str]):
+def generate_content_embeddings(gemini_client: Client, embedding_content: list[str]):
     embedding_result = gemini_client.models.embed_content(
         model="gemini-embedding-001",
         contents=embedding_content
