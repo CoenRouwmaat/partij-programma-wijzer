@@ -1,4 +1,4 @@
-# TODO: add upload, process & parse_response functions to MistralClient 
+# TODO: add upload, process & parse_response functions to MistralClient
 
 from dataclasses import asdict
 
@@ -18,6 +18,7 @@ class MistralClient:
         self.mistral = Mistral(api_key=self._api_key)
 
 
+class PostgresClient:
     def __init__(self, config: PostgresClientConfig):
         self.connection: connection = psycopg2.connect(**asdict(config))
         self.cursor: cursor = self.connection.cursor()
