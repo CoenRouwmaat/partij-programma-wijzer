@@ -6,15 +6,18 @@ from mistralai import Mistral
 import psycopg2
 from psycopg2.extensions import connection, cursor
 
-from src.config import MistralConfig, PostgresClientConfig
+from src.config import (
+    MistralClientConfig,
+    PostgresClientConfig
+)
 
 
 class MistralClient:
-    def __init__(self, config: MistralConfig):
+    def __init__(self, config: MistralClientConfig):
         self._api_key = config.api_key
         if not self._api_key:
             raise ValueError("Could not find MISTRAL_API_KEY in the environment variables.")
-        self.ocr_model = config.mistral_ocr_model
+        self.ocr_model = config.ocr_model
         self.mistral = Mistral(api_key=self._api_key)
 
 
