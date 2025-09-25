@@ -3,7 +3,6 @@
 # TODO: add summary?
 
 from dataclasses import dataclass
-from typing import Optional
 from uuid import UUID
 
 from enums import Party
@@ -18,11 +17,11 @@ class DocumentChunkData:
     party: Party
     chapter: str
     chapter_id: UUID
-    section: Optional[str]
-    section_id: Optional[UUID]
-    subsection: Optional[str]
-    subsection_id: Optional[UUID]
-    page_number: Optional[str]  # TBD
-    chunk_order: Optional[str]  # TBD
+    section: str | None
+    section_id: UUID | None
+    subsection: str | None
+    subsection_id: UUID | None
+    page_number: str | None  # TBD
+    chunk_order: str | None  # TBD
     content: str
     embedding: list[float]
