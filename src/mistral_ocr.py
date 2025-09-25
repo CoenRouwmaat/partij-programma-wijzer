@@ -3,6 +3,7 @@
 # TODO: add args and return types to docstrings
 # TODO: add module docstring
 # TODO: move global vars to config file
+# TODO: remove \n\n from page join?
 
 import base64
 import os
