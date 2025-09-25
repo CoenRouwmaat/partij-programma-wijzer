@@ -1,4 +1,5 @@
 # TODO: add upload, process & parse_response functions to MistralClient
+# TODO: add generate_content_embedding, generate_query_embedding function to GeminiClient
 
 from dataclasses import asdict
 
@@ -7,6 +8,7 @@ import psycopg2
 from psycopg2.extensions import connection, cursor
 
 from src.config import (
+    GeminiClientConfig,
     MistralClientConfig,
     PostgresClientConfig
 )
@@ -18,6 +20,15 @@ class MistralClient:
         if not self._api_key:
             raise ValueError("Could not find MISTRAL_API_KEY in the environment variables.")
         self.ocr_model = config.ocr_model
+        self.mistral = Mistral(api_key=self._api_key)
+
+
+class GeminiClient:
+    def __init__(self, config: GeminiClientConfig):
+        self._api_key = config.api_key
+        if not self._api_key:
+            raise ValueError("Could not find MISTRAL_API_KEY in the environment variables.")
+        self.embedding_model = config.embedding_model
         self.mistral = Mistral(api_key=self._api_key)
 
 
