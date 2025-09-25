@@ -1,5 +1,6 @@
 # TODO: look into Pydantic for dataclass definitions
 # TODO: refactor to folder (& change project_root def)
+# TODO: overlapping GeminiClientConfig and GeminiEmbeddingConfig
 
 from dataclasses import dataclass, field
 import os
@@ -33,6 +34,10 @@ class MistralClientConfig:
     ocr_model: str = "mistral-ocr-latest"
 
 
+@dataclass
+class GeminiClientConfig:
+    api_key: str = os.getenv("GEMINI_API_KEY", "")
+    embedding_model: str = "gemini-embedding-001"
 
 
 @dataclass
