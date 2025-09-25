@@ -28,8 +28,11 @@ class FilePaths:
 
 
 @dataclass
-class MistralConfig:
-    mistral_ocr_model: str = "mistral-ocr-latest"
+class MistralClientConfig:
+    api_key: str = os.getenv("MISTRAL_API_KEY", "")
+    ocr_model: str = "mistral-ocr-latest"
+
+
 
 
 @dataclass
