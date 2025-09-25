@@ -1,20 +1,11 @@
 from dotenv import load_dotenv
-from google import genai
+
+from src.data_classes import PartyDocumentChunk
 
 load_dotenv()
 
-client = genai.Client()
 
-result = client.models.embed_content(
-        model="gemini-embedding-001",
-        contents=[
-            "What is the meaning of life?",
-            "What is the purpose of existence?",
-            "How do I bake a cake?"
-        ])
-
-if not result.embeddings:
-    raise ValueError("Google API result did not return any embeddings.")
-
-for embedding in result.embeddings:
-    print(embedding)
+def format_embedding_content(chunk: PartyDocumentChunk) -> str:
+    """Append chapter, section, subsection and content for embedding"""
+    embedding_content = f"{chunk.chapter}\n{chunk.section}\n{chunk.subsection}\n{chunk.content}"
+    return embedding_content
