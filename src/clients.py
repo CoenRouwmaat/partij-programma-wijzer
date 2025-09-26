@@ -36,3 +36,35 @@ class PostgresClient:
     def __init__(self, config: PostgresClientConfig):
         self.connection: connection = psycopg2.connect(**asdict(config))
         self.cursor: cursor = self.connection.cursor()
+
+    def create_pg_vector_extension(self):
+        self.cursor.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+
+    def disconnect(self):
+        self.cursor.close()
+        self.connection.close()
+
+    def insert(self, table_name: str, data_list: list[tuple]):
+
+        # Roll back any previous failed transaction
+        self.connection.rollback()
+
+        insert_query_sql = """
+            INSERT INTO {table} \
+                (chunk_text, party_name, document_chapter, document_section, document_subsection, embedding)
+            VALUES (%s, %s, %s, %s, %s, %s);
+            """.format(table=table_name)
+        self.cursor.executemany(query=insert_query_sql, vars_list=data_list)
+
+        # Commit the changes
+        self.connection.commit()
+
+    def fetch_top_k(self, table_name: str, query_vector: list[float], top_k: int):
+        # TODO: top_k value validation
+        fetch_top_k_query_sql = """
+            SELECT chunk_text, party_name, document_chapter, document_section, document_subsection
+            FROM political_documents
+            ORDER BY embedding <-> %s::vector
+            LIMIT %s;
+            """
+        self.cursor.execute(query=fetch_top_k_query_sql, vars=(query_vector, top_k))
