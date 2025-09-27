@@ -1,10 +1,8 @@
-# TODO: create gemini client config class
 # TODO: convert embedding_content type to ndarray / tensor?
 
 from dotenv import load_dotenv
-from google.genai import Client
-from google.genai.types import EmbedContentConfig
 
+from src.clients import GeminiClient
 from src.data_classes import PartyDocumentChunk
 
 load_dotenv()
@@ -16,25 +14,17 @@ def format_embedding_content(chunk: PartyDocumentChunk) -> str:
     return embedding_content
 
 
-def generate_content_embeddings(gemini_client: Client, embedding_content: list[str]):
-    embedding_result = gemini_client.models.embed_content(
-        model="gemini-embedding-001",
-        contents=embedding_content
+def generate_content_embeddings(gemini_client: GeminiClient, embedding_content: list[str]) -> list[list[float]]:
+    content_embedding: list[list[float]] = gemini_client.embed(
+        contents=embedding_content,
+        config=gemini_client.content_embedding_config
         )
-    return embedding_result
+    return content_embedding
 
 
-def generate_query_embedding(gemini_client: Client, query: str) -> list[float]:
-    query_embedding = gemini_client.models.embed_content(
-        model="gemini-embedding-001",
+def generate_query_embedding(gemini_client: GeminiClient, query: str) -> list[float]:
+    query_embedding: list[float] = gemini_client.embed(
         contents=query,
-        config=EmbedContentConfig(
-            task_type="retrieval_query",
-            )
+        config=gemini_client.query_embedding_config
     )
-    if not query_embedding.embeddings:
-        raise ValueError(f"Gemini failed to return any embeddings for the query '{query}'.")
-    embedding = query_embedding.embeddings[0]
-    if not embedding.values:
-        raise ValueError(f"Embedding for query '{query}' does not contain any values.")
-    return embedding.values
+    return query_embedding
