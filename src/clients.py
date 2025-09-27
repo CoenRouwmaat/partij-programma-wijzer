@@ -1,10 +1,12 @@
-# TODO: add generate_content_embedding, generate_query_embedding function to GeminiClient
+# TODO: consider splitting GeminiClient embed() function into embed_content() and embed_query()
 
 from dataclasses import asdict
 from pathlib import Path
 
 from mistralai import Mistral
 from mistralai.models import File, FileChunk, OCRResponse
+from google.genai import Client as Gemini
+from google.genai.types import EmbedContentConfig, EmbedContentResponse
 import psycopg2
 from psycopg2.extensions import connection, cursor
 
@@ -48,9 +50,33 @@ class GeminiClient:
     def __init__(self, config: GeminiClientConfig):
         self._api_key = config.api_key
         if not self._api_key:
-            raise ValueError("Could not find MISTRAL_API_KEY in the environment variables.")
+            raise ValueError("Could not find GEMINI_API_KEY in the environment variables.")
         self.embedding_model = config.embedding_model
-        self.mistral = Mistral(api_key=self._api_key)
+        self.query_embedding_config = config.query_embedding_config
+        self.content_embedding_config = config.content_embedding_config
+        self.gemini = Gemini(api_key=self._api_key)
+
+    def embed(self, contents, config: EmbedContentConfig) -> list[list[float]] | list[float]:
+        embedding_result = self.gemini.models.embed_content(
+            model=self.embedding_model,
+            contents=contents,
+            config=config
+        )
+        embedding_values = self._get_embedding_values(embedding_response=embedding_result)
+        return embedding_values
+
+    @staticmethod
+    def _get_embedding_values(embedding_response: EmbedContentResponse) -> list[list[float]] | list[float]:
+        """Checks if embedding and embedding values exist, and returns list of values.
+        If result contains only one embedding, return single value list."""
+        embeddings = embedding_response.embeddings
+        if not embeddings:
+            raise ValueError("Gemini embedding result has no embeddings.")
+        embedding_values = [embedding.values for embedding in embeddings]
+        validated_embedding_values = [v for v in embedding_values if v is not None]
+        if len(embedding_values) != len(embeddings):
+            raise ValueError("Gemini embedding exists with no values.")
+        return validated_embedding_values[0] if len(validated_embedding_values) else validated_embedding_values
 
 
 class PostgresClient:
