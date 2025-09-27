@@ -6,55 +6,42 @@
 # TODO: remove \n\n from page join?
 
 import base64
-import os
 import re
 from pathlib import Path
 
 from dotenv import load_dotenv
 from loguru import logger
-from mistralai import Mistral
 from mistralai.models import OCRImageObject, OCRPageObject, OCRResponse
 
-from src.config import FilePaths, MistralConfig
+from src.clients import MistralClient
+from src.config import FilePaths, MistralClientConfig
 from src.enums import Party
 
 load_dotenv()
 
 
-def upload_pdf_to_mistral(mistral_client: Mistral, party: Party) -> str:
-    """Upload a file from the pdf directory to Mistral, and returns the document url."""
+def upload_pdf_to_mistral(mistral_client: MistralClient, party: Party) -> str:
+    """Upload a file from the pdf directory to Mistral, and returns the document id."""
 
     filename = f"Verkiezingsprogramma {party}.pdf"
-    file = FilePaths.pdf_dir / filename
+    filepath = FilePaths.pdf_dir / filename
 
-    if not file.exists():
-        raise ValueError(f"The file {file} does not exist.")
+    if not filepath.exists():
+        raise ValueError(f"The file {filepath} does not exist.")
 
     logger.info(f"Uploading {filename} to Mistral...")
-    uploaded_pdf = mistral_client.files.upload(
-        file={
-            "file_name": filename,
-            "content": open(file, "rb"),
-        },
-        purpose="ocr"
+    doc_id = mistral_client.upload_file_for_ocr(
+        filename=filename,
+        filepath=filepath
     )
-    signed_url = mistral_client.files.get_signed_url(file_id=uploaded_pdf.id)
-
-    return signed_url.url
+    return doc_id
 
 
-def mistral_process_pdf(mistral_client: Mistral, document_url: str) -> OCRResponse:
+def mistral_process_pdf(mistral_client: MistralClient, document_id: str) -> OCRResponse:
     """Run Mistral OCR on an uploaded document and returns the response."""
 
-    logger.info(f"Running OCR on document {document_url}...")
-    ocr_response = mistral_client.ocr.process(
-        model=MistralConfig.mistral_ocr_model,
-        document={
-            "type": "document_url",
-            "document_url": document_url,
-        },
-        include_image_base64=True
-    )
+    logger.info(f"Running OCR on document with ID {document_id}...")
+    ocr_response = mistral_client.run_ocr(document_id=document_id)
     return ocr_response
 
 
@@ -139,10 +126,11 @@ def save_ocr_response_as_md(ocr_result: OCRResponse, party: Party) -> None:
 def process_pdf_to_markdown(party: Party):
     """Process a single PDF file with OCR and store it as both a json and markdown file."""
 
-    mistral_client = Mistral(api_key=os.getenv("MISTRAL_API_KEY"))
+    mistral_client_config = MistralClientConfig()
+    mistral_client = MistralClient(config=mistral_client_config)
 
-    doc_url = upload_pdf_to_mistral(mistral_client=mistral_client, party=party)
-    ocr_result = mistral_process_pdf(mistral_client=mistral_client, document_url=doc_url)
+    doc_id = upload_pdf_to_mistral(mistral_client=mistral_client, party=party)
+    ocr_result = mistral_process_pdf(mistral_client=mistral_client, document_id=doc_id)
 
     save_ocr_response_as_json(ocr_result=ocr_result, party=party)
     save_ocr_response_as_md(ocr_result=ocr_result, party=party)
