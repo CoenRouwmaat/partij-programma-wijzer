@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Literal
 
 from dotenv import load_dotenv
-from google.genai import types
+from google.genai.types import EmbedContentConfig
 
 from src.utils import find_project_root
 
@@ -36,12 +36,6 @@ class MistralClientConfig:
 
 
 @dataclass
-class GeminiClientConfig:
-    api_key: str = os.getenv("GEMINI_API_KEY", "")
-    embedding_model: str = "gemini-embedding-001"
-
-
-@dataclass
 class MarkdownHeaderTextSplitterConfig:
     headers_to_split_on: list[tuple[str, str]] = field(
         default_factory=lambda: [
@@ -64,12 +58,26 @@ class RecursiveCharacterTextSplitterConfig:
 
 
 @dataclass
-class GeminiEmbeddingConfig:
-    model: str = "gemini-embedding-001"
-    config = types.EmbedContentConfig(
-        task_type="retrieval_document",
-        output_dimensionality=3072
+class GeminiClientConfig:
+    api_key: str = field(
+        default_factory=lambda: os.getenv("GEMINI_API_KEY", "")
     )
+    embedding_model: str = "gemini-embedding-001"
+    output_dimensionality: int = 3072
+    query_embedding_config: EmbedContentConfig = field(init=False)
+    content_embedding_config: EmbedContentConfig = field(init=False)
+
+    def __post_init__(self) -> None:
+        """Initializes fields that depend on other class attributes."""
+
+        self.query_embedding_config = EmbedContentConfig(
+            task_type="RETRIEVAL_QUERY",
+            output_dimensionality=self.output_dimensionality
+        )
+        self.content_embedding_config = EmbedContentConfig(
+            task_type="RETRIEVAL_DOCUMENT",
+            output_dimensionality=self.output_dimensionality
+        )
 
 
 @dataclass
