@@ -1,9 +1,10 @@
-# TODO: add upload, process & parse_response functions to MistralClient
 # TODO: add generate_content_embedding, generate_query_embedding function to GeminiClient
 
 from dataclasses import asdict
+from pathlib import Path
 
 from mistralai import Mistral
+from mistralai.models import File, FileChunk, OCRResponse
 import psycopg2
 from psycopg2.extensions import connection, cursor
 
@@ -21,6 +22,25 @@ class MistralClient:
             raise ValueError("Could not find MISTRAL_API_KEY in the environment variables.")
         self.ocr_model = config.ocr_model
         self.mistral = Mistral(api_key=self._api_key)
+
+    def upload_file_for_ocr(self, filename: str, filepath: Path) -> str:
+        upload_result = self.mistral.files.upload(
+            file=File(
+                file_name=filename,
+                content=open(filepath, "rb")
+            ),
+            purpose="ocr"
+        )
+        document_id = upload_result.id
+        return document_id
+
+    def run_ocr(self, document_id: str) -> OCRResponse:
+        ocr_result = self.mistral.ocr.process(
+            model=self.ocr_model,
+            document=FileChunk(file_id=document_id),
+            include_image_base64=False
+        )
+        return ocr_result
 
 
 class GeminiClient:
