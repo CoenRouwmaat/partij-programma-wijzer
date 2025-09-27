@@ -32,6 +32,7 @@ class FilePaths:
 class MistralClientConfig:
     api_key: str = os.getenv("MISTRAL_API_KEY", "")
     ocr_model: str = "mistral-ocr-latest"
+    include_images: bool = False
 
 
 @dataclass

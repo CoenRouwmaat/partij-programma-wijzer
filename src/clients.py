@@ -21,6 +21,7 @@ class MistralClient:
         if not self._api_key:
             raise ValueError("Could not find MISTRAL_API_KEY in the environment variables.")
         self.ocr_model = config.ocr_model
+        self.include_images = config.include_images
         self.mistral = Mistral(api_key=self._api_key)
 
     def upload_file_for_ocr(self, filename: str, filepath: Path) -> str:
@@ -38,7 +39,7 @@ class MistralClient:
         ocr_result = self.mistral.ocr.process(
             model=self.ocr_model,
             document=FileChunk(file_id=document_id),
-            include_image_base64=False
+            include_image_base64=self.include_images
         )
         return ocr_result
 
