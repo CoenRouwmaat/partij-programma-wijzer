@@ -17,6 +17,7 @@ class PartyDocumentChunk:
     section: str | None
     subsection: str | None
     content: str
+    embedding: list[float] | None
 
     @classmethod
     def from_langchain_document(cls, doc: Document, party: Party) -> 'PartyDocumentChunk':
@@ -34,7 +35,8 @@ class PartyDocumentChunk:
             chapter=metadata[DocumentStructure.CHAPTER],
             section=metadata.get(DocumentStructure.SECTION),
             subsection=metadata.get(DocumentStructure.SUBSECTION),
-            content=doc.page_content
+            content=doc.page_content,
+            embedding=None
         )
 
 
