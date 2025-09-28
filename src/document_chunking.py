@@ -30,7 +30,7 @@ class CustomMarkdownSplitter:
         self.markdown_splitter = MarkdownHeaderTextSplitter(**asdict(markdown_splitter_config))
         self.recursive_splitter = RecursiveCharacterTextSplitter(**asdict(recursive_splitter_config))
 
-    def split(self, markdown_str: str) -> list[PartyDocumentChunk]:
+    def split(self, markdown_str: str, party: Party) -> list[PartyDocumentChunk]:
         """
         Splits a markdown string into chunks using a two-step process.
 
@@ -47,12 +47,12 @@ class CustomMarkdownSplitter:
         langchain_chunks = self.recursive_splitter.split_documents(md_header_splits)
 
         party_document_chunks = [
-            PartyDocumentChunk.from_langchain_document(chunk) for chunk in langchain_chunks]
+            PartyDocumentChunk.from_langchain_document(doc=chunk, party=party) for chunk in langchain_chunks]
 
         return party_document_chunks
 
 
-def chunk_markdown_file(markdown_str: str) -> list[PartyDocumentChunk]:
+def chunk_markdown_file(markdown_str: str, party: Party) -> list[PartyDocumentChunk]:
     markdown_splitter_config = MarkdownHeaderTextSplitterConfig()
     recursive_splitter_config = RecursiveCharacterTextSplitterConfig()
 
@@ -60,7 +60,7 @@ def chunk_markdown_file(markdown_str: str) -> list[PartyDocumentChunk]:
         markdown_splitter_config=markdown_splitter_config,
         recursive_splitter_config=recursive_splitter_config
     )
-    chunks = splitter.split(markdown_str)
+    chunks = splitter.split(markdown_str=markdown_str, party=party)
     return chunks
 
 
@@ -69,7 +69,7 @@ def write_chunks_to_json(chunks: list[PartyDocumentChunk], chunk_path: Path) -> 
     with open(chunk_path, 'w', encoding='utf-8') as f:
         for chunk in chunks:
             # Convert the chunk object to a JSON string
-            chunk_dict = chunk.to_json()
+            chunk_dict = asdict(chunk)
             json_line = json.dumps(chunk_dict)
             # Write the JSON string to a new line
             f.write(json_line)
@@ -83,7 +83,7 @@ def read_and_chunk_markdown_file(party: Party) -> list[PartyDocumentChunk]:
     with open(clean_markdown_file, 'r', encoding='utf-8') as file:
         markdown_string = file.read()
 
-    chunks = chunk_markdown_file(markdown_string)
+    chunks = chunk_markdown_file(markdown_str=markdown_string, party=party)
     return chunks
 
 
