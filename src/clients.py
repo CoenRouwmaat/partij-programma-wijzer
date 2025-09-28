@@ -1,4 +1,5 @@
 # TODO: refactor to separate client modules
+# TODO: fix Gemini rate limit error
 
 from dataclasses import asdict
 from pathlib import Path
@@ -9,6 +10,7 @@ from loguru import logger
 from mistralai import Mistral
 from mistralai.models import File, FileChunk, OCRResponse
 from google.genai import Client as Gemini
+from google.genai.errors import ClientError
 from google.genai.types import EmbedContentResponse
 import psycopg2
 from psycopg2.extensions import connection, cursor
@@ -56,18 +58,49 @@ class GeminiClient:
         if not self._api_key:
             raise ValueError("Could not find GEMINI_API_KEY in the environment variables.")
         self.embedding_model = config.embedding_model
+        self.embedding_batch_size = config.embedding_batch_size
         self.query_embedding_config = config.query_embedding_config
         self.content_embedding_config = config.content_embedding_config
         self.gemini = Gemini(api_key=self._api_key)
 
+    def _batch_iterable(self, contents: Iterable) -> Iterable[list]:
+        """Helper function to yield fixed-size batches from an iterable."""
+        batch = []
+        for item in contents:
+            batch.append(item)
+            if len(batch) == self.embedding_batch_size:
+                yield batch
+                batch = []
+        if batch:
+            yield batch
+
     def embed_content(self, contents: Iterable[str]) -> list[list[float]]:
-        embedding_result = self.gemini.models.embed_content(
-            model=self.embedding_model,
-            contents=contents,
-            config=self.content_embedding_config
-        )
-        embedding_values = self._get_content_embedding_values(embedding_response=embedding_result)
-        return embedding_values
+
+        all_embedding_values = []
+        # 1. Chunk the input contents into lists of size self.embedding_batch_size
+        for batch_contents in self._batch_iterable(contents=contents):
+            try:
+                # 2. Call the API for the current batch
+                embedding_result = self.gemini.models.embed_content(
+                    model=self.embedding_model,
+                    contents=batch_contents,  # Pass the batch list
+                    config=self.content_embedding_config
+                )
+
+                # 3. Extract values and extend the master list
+                embedding_values = self._get_content_embedding_values(
+                    embedding_response=embedding_result
+                )
+                all_embedding_values.extend(embedding_values)
+
+            except ClientError as e:
+                # Re-raise the error if it's not related to the batch size,
+                # or if the chunking failed.
+                logger.error(f"Error during batch embedding: {e}")
+                raise
+
+        # 4. Return all collected embeddings
+        return all_embedding_values
 
     def embed_query(self, content: str) -> list[float]:
         embedding_result = self.gemini.models.embed_content(
