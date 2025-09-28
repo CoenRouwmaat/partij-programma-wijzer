@@ -5,7 +5,7 @@
 from dataclasses import dataclass
 from uuid import UUID
 
-from enums import Party, DocumentStructure
+from src.enums import Party, DocumentStructure
 from langchain_core.documents import Document
 
 
