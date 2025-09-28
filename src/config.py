@@ -1,6 +1,5 @@
 # TODO: look into Pydantic for dataclass definitions
-# TODO: refactor to folder (& change project_root def)
-# TODO: overlapping GeminiClientConfig and GeminiEmbeddingConfig
+# TODO: refactor to folder
 
 from dataclasses import dataclass, field
 import os
