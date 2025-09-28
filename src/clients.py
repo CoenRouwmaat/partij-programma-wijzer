@@ -1,4 +1,4 @@
-# TODO: consider splitting GeminiClient embed() function into embed_content() and embed_query()
+# TODO: refactor to separate client modules
 
 from dataclasses import asdict
 from pathlib import Path
@@ -8,7 +8,7 @@ from loguru import logger
 from mistralai import Mistral
 from mistralai.models import File, FileChunk, OCRResponse
 from google.genai import Client as Gemini
-from google.genai.types import EmbedContentConfig, EmbedContentResponse
+from google.genai.types import EmbedContentResponse
 import psycopg2
 from psycopg2.extensions import connection, cursor
 
@@ -58,27 +58,46 @@ class GeminiClient:
         self.content_embedding_config = config.content_embedding_config
         self.gemini = Gemini(api_key=self._api_key)
 
-    def embed(self, contents, config: EmbedContentConfig) -> list[list[float]] | list[float]:
+    def embed_content(self, contents: list[str]) -> list[list[float]]:
         embedding_result = self.gemini.models.embed_content(
             model=self.embedding_model,
             contents=contents,
-            config=config
+            config=self.content_embedding_config
         )
-        embedding_values = self._get_embedding_values(embedding_response=embedding_result)
+        embedding_values = self._get_content_embedding_values(embedding_response=embedding_result)
+        return embedding_values
+
+    def embed_query(self, contents) -> list[list[float]] | list[float]:
+        embedding_result = self.gemini.models.embed_content(
+            model=self.embedding_model,
+            contents=contents,
+            config=self.query_embedding_config
+        )
+        embedding_values = self._get_query_embedding_values(embedding_response=embedding_result)
         return embedding_values
 
     @staticmethod
-    def _get_embedding_values(embedding_response: EmbedContentResponse) -> list[list[float]] | list[float]:
-        """Checks if embedding and embedding values exist, and returns list of values.
-        If result contains only one embedding, return single value list."""
+    def _get_content_embedding_values(embedding_response: EmbedContentResponse) -> list[list[float]]:
+        """Checks if embedding and embedding values exist, and returns list of content value lists."""
         embeddings = embedding_response.embeddings
         if not embeddings:
-            raise ValueError("Gemini embedding result has no embeddings.")
+            raise ValueError("Gemini content embedding result has no embeddings.")
         embedding_values = [embedding.values for embedding in embeddings]
         validated_embedding_values = [v for v in embedding_values if v is not None]
         if len(embedding_values) != len(embeddings):
-            raise ValueError("Gemini embedding exists with no values.")
-        return validated_embedding_values[0] if len(validated_embedding_values) else validated_embedding_values
+            raise ValueError("Gemini content embedding exists with no values.")
+        return validated_embedding_values
+
+    @staticmethod
+    def _get_query_embedding_values(embedding_response: EmbedContentResponse) -> list[float]:
+        """Checks if embedding and embedding values exist, and returns list of query values."""
+        embeddings = embedding_response.embeddings
+        if not embeddings:
+            raise ValueError("Gemini embedding result has no embeddings.")
+        embedding_values = embeddings[0].values
+        if not embedding_values:
+            raise ValueError("Gemini query embedding has no values.")
+        return embedding_values
 
 
 class PostgresClient:
