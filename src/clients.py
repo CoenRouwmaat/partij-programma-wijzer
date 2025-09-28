@@ -3,6 +3,7 @@
 from dataclasses import asdict
 from pathlib import Path
 import pandas as pd
+from typing import Iterable
 
 from loguru import logger
 from mistralai import Mistral
@@ -58,7 +59,7 @@ class GeminiClient:
         self.content_embedding_config = config.content_embedding_config
         self.gemini = Gemini(api_key=self._api_key)
 
-    def embed_content(self, contents: list[str]) -> list[list[float]]:
+    def embed_content(self, contents: Iterable[str]) -> list[list[float]]:
         embedding_result = self.gemini.models.embed_content(
             model=self.embedding_model,
             contents=contents,
@@ -67,10 +68,10 @@ class GeminiClient:
         embedding_values = self._get_content_embedding_values(embedding_response=embedding_result)
         return embedding_values
 
-    def embed_query(self, contents) -> list[list[float]] | list[float]:
+    def embed_query(self, content: str) -> list[float]:
         embedding_result = self.gemini.models.embed_content(
             model=self.embedding_model,
-            contents=contents,
+            contents=content,
             config=self.query_embedding_config
         )
         embedding_values = self._get_query_embedding_values(embedding_response=embedding_result)
