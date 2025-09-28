@@ -2,7 +2,9 @@
 
 from dataclasses import asdict
 from pathlib import Path
+import pandas as pd
 
+from loguru import logger
 from mistralai import Mistral
 from mistralai.models import File, FileChunk, OCRResponse
 from google.genai import Client as Gemini
@@ -85,33 +87,67 @@ class PostgresClient:
         self.cursor: cursor = self.connection.cursor()
 
     def create_pg_vector_extension(self):
-        self.cursor.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+        sql_query = "CREATE EXTENSION IF NOT EXISTS vector;"
+        self.execute_query(query=sql_query)
 
     def disconnect(self):
         self.cursor.close()
         self.connection.close()
 
-    def insert(self, table_name: str, data_list: list[tuple]):
+    def execute_query(self, query: str) -> None:
+        try:
+            self.cursor.execute(query)
+            self.connection.commit()
+        except Exception as e:
+            logger.error(f"An error has occured while executing the query '{query}'."
+                         f"Error: {e}")
+            self.connection.rollback()
 
-        # Roll back any previous failed transaction
-        self.connection.rollback()
+    def list_tables(self) -> list[str]:
+        sql_query = """
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
+        AND table_type = 'BASE TABLE';
+        """
+        self.execute_query(query=sql_query)
+        tables_data = self.cursor.fetchall()
+        table_names = [table[0] for table in tables_data]
+        return table_names
+
+    def get_table(self, table_name: str) -> pd.DataFrame:
+        sql_query = f"SELECT * FROM {table_name}"
+        try:
+            df = pd.read_sql_query(sql=sql_query, con=self.connection)
+            return df
+        except Exception as e:
+            logger.error(f"An error has occured while fetching the table '{table_name}': {e}")
+            return pd.DataFrame()
+
+    def clear_table(self, table_name: str):
+        sql_query = f"TRUNCATE TABLE {table_name}"
+        self.execute_query(query=sql_query)
+
+    def insert(self, table_name: str, data_list: list[tuple]):
 
         insert_query_sql = """
             INSERT INTO {table} \
                 (chunk_text, party_name, document_chapter, document_section, document_subsection, embedding)
             VALUES (%s, %s, %s, %s, %s, %s);
             """.format(table=table_name)
-        self.cursor.executemany(query=insert_query_sql, vars_list=data_list)
-
-        # Commit the changes
-        self.connection.commit()
+        try:
+            self.cursor.executemany(query=insert_query_sql, vars_list=data_list)
+            self.connection.commit()
+        except Exception as e:
+            logger.error(f"An error has occured while writing to '{table_name}': {e}")
+            self.connection.rollback()
 
     def fetch_top_k(self, table_name: str, query_vector: list[float], top_k: int):
         # TODO: top_k value validation
         fetch_top_k_query_sql = """
             SELECT chunk_text, party_name, document_chapter, document_section, document_subsection
-            FROM political_documents
+            FROM %s
             ORDER BY embedding <-> %s::vector
             LIMIT %s;
             """
-        self.cursor.execute(query=fetch_top_k_query_sql, vars=(query_vector, top_k))
+        self.cursor.execute(query=fetch_top_k_query_sql, vars=(table_name, query_vector, top_k))
