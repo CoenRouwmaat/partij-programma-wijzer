@@ -6,13 +6,13 @@ import json
 from dataclasses import asdict
 from pathlib import Path
 
-from langchain_core.documents import Document
 from langchain_text_splitters import (MarkdownHeaderTextSplitter,
                                       RecursiveCharacterTextSplitter)
 from loguru import logger
 
 from src.config import (FilePaths, MarkdownHeaderTextSplitterConfig,
                         RecursiveCharacterTextSplitterConfig)
+from src.data_classes import PartyDocumentChunk
 from src.enums import Party
 
 
@@ -30,7 +30,7 @@ class CustomMarkdownSplitter:
         self.markdown_splitter = MarkdownHeaderTextSplitter(**asdict(markdown_splitter_config))
         self.recursive_splitter = RecursiveCharacterTextSplitter(**asdict(recursive_splitter_config))
 
-    def split(self, markdown_str: str) -> list[Document]:
+    def split(self, markdown_str: str) -> list[PartyDocumentChunk]:
         """
         Splits a markdown string into chunks using a two-step process.
 
@@ -44,12 +44,15 @@ class CustomMarkdownSplitter:
         md_header_splits = self.markdown_splitter.split_text(markdown_str)
 
         # Step 2: Recursively split the header chunks into smaller chunks
-        final_chunks = self.recursive_splitter.split_documents(md_header_splits)
+        langchain_chunks = self.recursive_splitter.split_documents(md_header_splits)
 
-        return final_chunks
+        party_document_chunks = [
+            PartyDocumentChunk.from_langchain_document(chunk) for chunk in langchain_chunks]
+
+        return party_document_chunks
 
 
-def chunk_markdown_file(markdown_str: str) -> list[Document]:
+def chunk_markdown_file(markdown_str: str) -> list[PartyDocumentChunk]:
     markdown_splitter_config = MarkdownHeaderTextSplitterConfig()
     recursive_splitter_config = RecursiveCharacterTextSplitterConfig()
 
@@ -61,7 +64,7 @@ def chunk_markdown_file(markdown_str: str) -> list[Document]:
     return chunks
 
 
-def write_chunks_to_json(chunks: list[Document], chunk_path: Path) -> None:
+def write_chunks_to_json(chunks: list[PartyDocumentChunk], chunk_path: Path) -> None:
 
     with open(chunk_path, 'w', encoding='utf-8') as f:
         for chunk in chunks:
@@ -74,7 +77,7 @@ def write_chunks_to_json(chunks: list[Document], chunk_path: Path) -> None:
     logger.info(f"Chunks saved to {chunk_path}")
 
 
-def read_and_chunk_markdown_file(party: Party) -> list[Document]:
+def read_and_chunk_markdown_file(party: Party) -> list[PartyDocumentChunk]:
     clean_markdown_file = FilePaths.clean_markdown_dir / f"{party}_clean.md"
 
     with open(clean_markdown_file, 'r', encoding='utf-8') as file:
