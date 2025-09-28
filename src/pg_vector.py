@@ -1,32 +1,28 @@
-# TODO: add type hint for connection
-# TODO: add PostgresClient object with PostgresConfig
-# TODO: add error catching
-
-import os
-
-from dotenv import load_dotenv
-import psycopg2
-from psycopg2._psycopg import cursor
-
-load_dotenv()
+from src.clients import PostgresClient
+from src.config import PostgresClientConfig
+from src.data_classes import PartyDocumentChunk
 
 
-def connect_to_db(
-    host: str | None = os.getenv("PG_HOST"),
-    port: str | None = os.getenv("PG_PORT"),
-    database: str | None = os.getenv("PG_DATABASE"),
-    username: str | None = os.getenv("PG_USERNAME"),
-    password: str | None = os.getenv("PG_PASSWORD")
-) -> cursor:
-    conn = psycopg2.connect(
-        dbname=database,
-        user=username,
-        password=password,
-        host=host,
-        port=port
+def index_chunks_to_postgres_db(chunks: list[PartyDocumentChunk]):
+    pg_client_config = PostgresClientConfig()
+    pg_client = PostgresClient(config=pg_client_config)
+    pg_client.create_pg_vector_extension()
+
+    create_table_query = """
+    CREATE TABLE IF NOT EXISTS political_documents (
+        id SERIAL PRIMARY KEY,
+        chunk_text TEXT,
+        party_name TEXT,
+        document_chapter TEXT,
+        document_section TEXT,
+        document_subsection TEXT,
+        embedding VECTOR(3072)
+    );
+    """
+
+    pg_client.execute_query(query=create_table_query)
+
+    pg_client.insert_chunks(
+        table_name='political_documents',
+        chunks=chunks
     )
-    cursor = conn.cursor()
-
-    # Enable the pgvector extension
-    cursor.execute("CREATE EXTENSION IF NOT EXISTS vector;")
-    return cursor
