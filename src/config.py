@@ -63,6 +63,7 @@ class GeminiClientConfig:
     )
     embedding_model: str = "gemini-embedding-001"
     output_dimensionality: int = 3072
+    embedding_batch_size: int = 100
     query_embedding_config: EmbedContentConfig = field(init=False)
     content_embedding_config: EmbedContentConfig = field(init=False)
 
