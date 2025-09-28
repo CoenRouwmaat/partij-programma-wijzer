@@ -3,6 +3,7 @@
 from dotenv import load_dotenv
 
 from src.clients import GeminiClient
+from src.config import GeminiClientConfig
 from src.data_classes import PartyDocumentChunk
 
 load_dotenv()
@@ -28,3 +29,17 @@ def generate_query_embedding(gemini_client: GeminiClient, query: str) -> list[fl
         config=gemini_client.query_embedding_config
     )
     return query_embedding
+
+
+def add_embedding_to_chunks(chunks: list[PartyDocumentChunk]) -> list[PartyDocumentChunk]:
+    embedding_contents = map(format_embedding_content, chunks)
+
+    gemini_client_config = GeminiClientConfig()
+    gemini_client = GeminiClient(config=gemini_client_config)
+
+    embedding_results = gemini_client.embed_content(contents=embedding_contents)
+
+    for chunk, embedding in zip(chunks, embedding_results):
+        chunk.embedding = embedding
+
+    return chunks
