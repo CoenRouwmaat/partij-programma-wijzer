@@ -18,6 +18,7 @@ from src.config import (
     MistralClientConfig,
     PostgresClientConfig
 )
+from src.data_classes import PartyDocumentChunk
 
 
 class MistralClient:
@@ -148,18 +149,28 @@ class PostgresClient:
         sql_query = f"TRUNCATE TABLE {table_name}"
         self.execute_query(query=sql_query)
 
-    def insert(self, table_name: str, data_list: list[tuple]):
-
+    def insert_chunks(self, table_name: str, chunk_list: list[PartyDocumentChunk]):
+        """
+        Inserts a list of PartyDocumentChunk objects into the specified PostgreSQL table
+        using executemany for efficiency.
+        """
         insert_query_sql = """
             INSERT INTO {table} \
                 (chunk_text, party_name, document_chapter, document_section, document_subsection, embedding)
             VALUES (%s, %s, %s, %s, %s, %s);
             """.format(table=table_name)
+
+        data_to_insert = [chunk.to_postgres_tuple() for chunk in chunk_list]
+
         try:
-            self.cursor.executemany(query=insert_query_sql, vars_list=data_list)
+            self.cursor.executemany(query=insert_query_sql, vars_list=data_to_insert)
             self.connection.commit()
+            logger.info(f"Successfully inserted {len(data_to_insert)} chunks into '{table_name}'.")
+        except psycopg2.Error as e:
+            logger.error(f"PostgreSQL Error while writing to '{table_name}': {e}")
+            self.connection.rollback()
         except Exception as e:
-            logger.error(f"An error has occured while writing to '{table_name}': {e}")
+            logger.error(f"An unexpected error occurred: {e}")
             self.connection.rollback()
 
     def fetch_top_k(self, table_name: str, query_vector: list[float], top_k: int):
