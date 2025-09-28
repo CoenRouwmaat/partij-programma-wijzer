@@ -5,18 +5,37 @@
 from dataclasses import dataclass
 from uuid import UUID
 
-from enums import Party
+from enums import Party, DocumentStructure
+from langchain_core.documents import Document
 
 
 @dataclass
 class PartyDocumentChunk:
     """Represents a document chunk with content and other available information."""
     party: Party
-    title: str
     chapter: str
     section: str | None
     subsection: str | None
     content: str
+
+    @classmethod
+    def from_langchain_document(cls, doc: Document, party: Party) -> 'PartyDocumentChunk':
+        """
+        Creates a PartyDocumentChunk instance from a langchain Document object.
+
+        It assumes the Document has the required keys in its metadata.
+        """
+        metadata = doc.metadata
+        if DocumentStructure.CHAPTER not in metadata:
+            raise ValueError(f"'{DocumentStructure.CHAPTER}' is not present in metadata.")
+
+        return cls(
+            party=party,
+            chapter=metadata[DocumentStructure.CHAPTER],
+            section=metadata.get(DocumentStructure.SECTION),
+            subsection=metadata.get(DocumentStructure.SUBSECTION),
+            content=doc.page_content
+        )
 
 
 @dataclass
