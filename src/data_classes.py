@@ -39,6 +39,21 @@ class PartyDocumentChunk:
             embedding=None
         )
 
+    def to_postgres_tuple(self) -> tuple:
+        """
+        Returns the chunk's attributes as a tuple, correctly ordered for
+        the PostgreSQL INSERT query's values clause.
+        """
+        postgres_tuple = (
+            self.content,
+            self.party,
+            self.chapter,
+            self.section,
+            self.subsection,
+            self.embedding
+        )
+        return postgres_tuple
+
 
 @dataclass
 class EnrichedPartyDocumentChunk:
